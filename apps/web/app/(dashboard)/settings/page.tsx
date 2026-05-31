@@ -1,0 +1,89 @@
+import { PageHeader } from '@/components/dashboard/page-header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { requireAuth } from '@/lib/auth/context';
+import { createClient } from '@/lib/supabase/server';
+import { InviteForm } from './invite-form';
+
+const ROLE_LABEL: Record<string, string> = {
+  owner: 'オーナー',
+  admin: '管理者',
+  staff: 'スタッフ',
+};
+
+export default async function SettingsPage() {
+  const { tenant, shopUser } = await requireAuth();
+  const supabase = createClient();
+
+  // RLS により自テナントのメンバーのみ取得
+  const { data: members } = await supabase
+    .from('shop_users')
+    .select('id, email, display_name, role, created_at')
+    .order('created_at', { ascending: true });
+
+  const canInvite = ['owner', 'admin'].includes(shopUser.role);
+
+  return (
+    <>
+      <PageHeader title="設定" description="店舗情報・メンバー管理" />
+
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>店舗情報</CardTitle>
+            <CardDescription>基本情報（編集は今後対応）</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between border-b py-2">
+              <span className="text-muted-foreground">店舗名</span>
+              <span className="font-medium">{tenant.name}</span>
+            </div>
+            <div className="flex justify-between border-b py-2">
+              <span className="text-muted-foreground">URL 識別子</span>
+              <span className="font-medium">{tenant.slug}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-muted-foreground">ステータス</span>
+              <span className="font-medium">{tenant.status}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>メンバー（{members?.length ?? 0}）</CardTitle>
+            <CardDescription>このテナントに所属する店舗ユーザー</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y">
+              {members?.map((m) => (
+                <li key={m.id} className="flex items-center justify-between py-3 text-sm">
+                  <div>
+                    <p className="font-medium">{m.display_name ?? m.email}</p>
+                    <p className="text-muted-foreground">{m.email}</p>
+                  </div>
+                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">
+                    {ROLE_LABEL[m.role] ?? m.role}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
+        {canInvite && (
+          <Card>
+            <CardHeader>
+              <CardTitle>メンバーを招待</CardTitle>
+              <CardDescription>
+                招待されたメンバーはこのテナントに参加します（メールのリンクから登録）。
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InviteForm />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </>
+  );
+}

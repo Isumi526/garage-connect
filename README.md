@@ -50,15 +50,19 @@ cd garage-connect
 pnpm install
 
 # 3. 環境変数の設定
-cp .env.example .env.local
-# .env.local を編集して各サービスのキーを設定
+#    Next.js は monorepo では apps/web 配下の .env.local を読み込む
+cp .env.example apps/web/.env.local
+# apps/web/.env.local を編集して各サービスのキーを設定
 
-# 4. Supabase のセットアップ
-pnpm supabase start
-pnpm supabase db push
+# 4. Supabase のセットアップ（Docker Desktop 起動が前提）
+pnpm supabase start          # ローカルスタック起動（URL/キーが表示される）
+pnpm db:reset                # マイグレーション適用
 
 # 5. 開発サーバー起動
 pnpm dev
+
+# (任意) RLS テナント分離の検証
+pnpm verify:rls
 ```
 
 開発サーバーは http://localhost:3000 で起動します。
