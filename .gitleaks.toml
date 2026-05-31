@@ -1,0 +1,21 @@
+# gitleaks 設定 — Garage Connect
+# 公開リポジトリのため、機密情報の混入を検知する。
+title = "Garage Connect gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "プレースホルダ・テンプレートは許可"
+paths = [
+  '''\.env\.example''',
+  '''README\.md''',
+  '''CLAUDE\.md''',
+  '''docs/.*''',
+]
+regexes = [
+  '''xxxxxxxx''',
+  '''pk_test_xxx''',
+  '''sk_test_xxx''',
+  '''whsec_xxx''',
+]
