@@ -42,6 +42,14 @@ export function LoginForm({ redirect }: { redirect: string }) {
             />
           </div>
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+          <div className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              パスワードをお忘れですか？
+            </Link>
+          </div>
         </CardContent>
         <CardFooter className="flex-col gap-3">
           <SubmitButton>ログイン</SubmitButton>

@@ -54,6 +54,16 @@ export default function SignupPage() {
             />
             <p className="text-xs text-muted-foreground">8 文字以上</p>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="passwordConfirm">パスワード（確認）</Label>
+            <Input
+              id="passwordConfirm"
+              name="passwordConfirm"
+              type="password"
+              autoComplete="new-password"
+              required
+            />
+          </div>
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
         </CardContent>
         <CardFooter className="flex-col gap-3">
