@@ -1,4 +1,4 @@
-import { confirmBooking, rejectBooking } from '@/app/(dashboard)/bookings/actions';
+import { confirmBooking, rejectBooking } from '@/app/dashboard/bookings/actions';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

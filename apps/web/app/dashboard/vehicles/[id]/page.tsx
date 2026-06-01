@@ -1,4 +1,4 @@
-import { deleteVehicle } from '@/app/(dashboard)/vehicles/actions';
+import { deleteVehicle } from '@/app/dashboard/vehicles/actions';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { DeleteButton } from '@/components/shared/delete-button';
 import { Badge } from '@/components/ui/badge';

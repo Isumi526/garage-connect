@@ -1,4 +1,4 @@
-import { deleteCustomer } from '@/app/(dashboard)/customers/actions';
+import { deleteCustomer } from '@/app/dashboard/customers/actions';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { DeleteButton } from '@/components/shared/delete-button';
 import { Badge } from '@/components/ui/badge';

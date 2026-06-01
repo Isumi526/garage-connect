@@ -1,6 +1,6 @@
 'use client';
 
-import { type ImportState, importCustomers } from '@/app/(dashboard)/customers/import/actions';
+import { type ImportState, importCustomers } from '@/app/dashboard/customers/import/actions';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFormState } from 'react-dom';

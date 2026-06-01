@@ -1,4 +1,4 @@
-import { openBillingPortal, startCheckout } from '@/app/(dashboard)/settings/billing/actions';
+import { openBillingPortal, startCheckout } from '@/app/dashboard/settings/billing/actions';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

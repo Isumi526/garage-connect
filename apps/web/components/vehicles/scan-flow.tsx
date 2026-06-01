@@ -1,6 +1,6 @@
 'use client';
 
-import { type ScanRegisterState, registerFromQr } from '@/app/(dashboard)/vehicles/scan/actions';
+import { type ScanRegisterState, registerFromQr } from '@/app/dashboard/vehicles/scan/actions';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

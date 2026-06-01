@@ -1,4 +1,4 @@
-import { createCustomer } from '@/app/(dashboard)/customers/actions';
+import { createCustomer } from '@/app/dashboard/customers/actions';
 import { CustomerForm } from '@/components/customers/customer-form';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { requireAuth } from '@/lib/auth/context';

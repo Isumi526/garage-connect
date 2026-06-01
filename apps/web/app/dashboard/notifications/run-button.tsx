@@ -1,6 +1,6 @@
 'use client';
 
-import { type RunState, runNotificationsNow } from '@/app/(dashboard)/notifications/actions';
+import { type RunState, runNotificationsNow } from '@/app/dashboard/notifications/actions';
 import { Button } from '@/components/ui/button';
 import { useFormState } from 'react-dom';
 import { useFormStatus } from 'react-dom';

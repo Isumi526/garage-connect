@@ -1,4 +1,4 @@
-import { linkConnectionToCustomer } from '@/app/(dashboard)/settings/line/actions';
+import { linkConnectionToCustomer } from '@/app/dashboard/settings/line/actions';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

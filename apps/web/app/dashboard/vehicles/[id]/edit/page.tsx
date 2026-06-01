@@ -1,4 +1,4 @@
-import { updateVehicle } from '@/app/(dashboard)/vehicles/actions';
+import { updateVehicle } from '@/app/dashboard/vehicles/actions';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { VehicleForm } from '@/components/vehicles/vehicle-form';
 import { requireAuth } from '@/lib/auth/context';

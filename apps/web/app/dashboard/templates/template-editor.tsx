@@ -1,6 +1,6 @@
 'use client';
 
-import { type TemplateState, updateTemplate } from '@/app/(dashboard)/templates/actions';
+import { type TemplateState, updateTemplate } from '@/app/dashboard/templates/actions';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { CustomerFormState } from '@/app/(dashboard)/customers/actions';
+import type { CustomerFormState } from '@/app/dashboard/customers/actions';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

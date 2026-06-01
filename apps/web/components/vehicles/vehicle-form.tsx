@@ -1,6 +1,6 @@
 'use client';
 
-import type { VehicleFormState } from '@/app/(dashboard)/vehicles/actions';
+import type { VehicleFormState } from '@/app/dashboard/vehicles/actions';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

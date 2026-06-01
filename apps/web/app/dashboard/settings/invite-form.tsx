@@ -1,6 +1,6 @@
 'use client';
 
-import { type InviteState, inviteMember } from '@/app/(dashboard)/settings/actions';
+import { type InviteState, inviteMember } from '@/app/dashboard/settings/actions';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

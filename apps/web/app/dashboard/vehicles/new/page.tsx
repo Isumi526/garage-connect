@@ -1,4 +1,4 @@
-import { createVehicle } from '@/app/(dashboard)/vehicles/actions';
+import { createVehicle } from '@/app/dashboard/vehicles/actions';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { VehicleForm } from '@/components/vehicles/vehicle-form';

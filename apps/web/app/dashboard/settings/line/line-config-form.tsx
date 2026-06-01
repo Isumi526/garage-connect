@@ -4,7 +4,7 @@ import {
   type LineConfigState,
   saveLineConfig,
   verifyLineToken,
-} from '@/app/(dashboard)/settings/line/actions';
+} from '@/app/dashboard/settings/line/actions';
 import { SubmitButton } from '@/components/auth/submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
