@@ -2,10 +2,18 @@ import { logout } from '@/app/(auth)/actions';
 import { DashboardNav } from '@/components/dashboard/nav';
 import { Button } from '@/components/ui/button';
 import { requireAuth } from '@/lib/auth/context';
+import { createClient } from '@/lib/supabase/server';
 import type { ReactNode } from 'react';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const { tenant, shopUser } = await requireAuth();
+
+  // 未確認予約バッジ（顧客→店舗の通知は MVP ではこのバッジで代替）
+  const supabase = createClient();
+  const { count: pendingBookings } = await supabase
+    .from('bookings')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
 
   return (
     <div className="flex min-h-screen">
@@ -14,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <p className="text-lg font-bold">Garage Connect</p>
           <p className="truncate text-sm text-muted-foreground">{tenant.name}</p>
         </div>
-        <DashboardNav />
+        <DashboardNav pendingBookings={pendingBookings ?? 0} />
         <div className="mt-auto space-y-2 border-t pt-4">
           <p className="truncate px-3 text-xs text-muted-foreground">
             {shopUser.display_name}（{shopUser.role}）

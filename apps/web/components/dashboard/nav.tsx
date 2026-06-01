@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/settings', label: '設定', icon: Settings },
 ];
 
-export function DashboardNav() {
+export function DashboardNav({ pendingBookings = 0 }: { pendingBookings?: number }) {
   const pathname = usePathname();
 
   return (
@@ -24,6 +24,7 @@ export function DashboardNav() {
         const Icon = item.icon;
         const active =
           item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+        const badge = item.href === '/dashboard/bookings' && pendingBookings > 0;
         return (
           <Link
             key={item.href}
@@ -36,7 +37,12 @@ export function DashboardNav() {
             )}
           >
             <Icon className="h-4 w-4" />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {badge && (
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground">
+                {pendingBookings}
+              </span>
+            )}
           </Link>
         );
       })}

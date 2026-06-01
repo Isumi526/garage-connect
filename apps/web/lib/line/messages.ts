@@ -26,3 +26,38 @@ export function applyTemplate(body: string, vars: TemplateVariables): string {
 export function textMessage(text: string) {
   return { type: 'text' as const, text };
 }
+
+/** 予約受付（確認待ち）メッセージ */
+export function bookingReceivedText(p: {
+  shopName: string;
+  bookingTypeLabel: string;
+  dateLabel: string;
+  slotLabel: string;
+}): string {
+  return [
+    `${p.shopName} です。`,
+    `${p.bookingTypeLabel}のご予約を受け付けました。`,
+    '',
+    `希望日: ${p.dateLabel}`,
+    `時間帯: ${p.slotLabel}`,
+    '',
+    '内容を確認のうえ、確定のご連絡をいたします。',
+  ].join('\n');
+}
+
+/** 予約確定メッセージ */
+export function bookingConfirmedText(p: {
+  shopName: string;
+  bookingTypeLabel: string;
+  dateLabel: string;
+  slotLabel: string;
+}): string {
+  return [
+    `${p.shopName} です。`,
+    `${p.bookingTypeLabel}のご予約が確定しました。`,
+    '',
+    `日時: ${p.dateLabel} ${p.slotLabel}`,
+    '',
+    'ご来店をお待ちしております。',
+  ].join('\n');
+}
