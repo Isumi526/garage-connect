@@ -1,6 +1,7 @@
 'use server';
 
 import { requireAuth } from '@/lib/auth/context';
+import { customerCapacity, limitMessage } from '@/lib/billing/limit-check';
 import { createClient } from '@/lib/supabase/server';
 import { customerSchema } from '@/lib/validations/customer';
 import { formToObject } from '@/lib/validations/helpers';
@@ -20,6 +21,12 @@ export async function createCustomer(
   }
 
   const supabase = createClient();
+
+  const capacity = await customerCapacity(supabase, tenant.id);
+  if (!capacity.allowed && capacity.limit !== null) {
+    return { error: limitMessage(capacity.limit) };
+  }
+
   const { data, error } = await supabase
     .from('customers')
     .insert({ ...parsed.data, tenant_id: tenant.id })

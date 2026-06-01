@@ -1,6 +1,7 @@
 'use server';
 
 import { requireAuth } from '@/lib/auth/context';
+import { customerCapacity } from '@/lib/billing/limit-check';
 import { parseCsv } from '@/lib/csv/parse';
 import { createClient } from '@/lib/supabase/server';
 import { customerSchema } from '@/lib/validations/customer';
@@ -68,12 +69,24 @@ export async function importCustomers(
     }
   });
 
+  const supabase = createClient();
+
+  // プラン上限（フリートライアル 20 件）を超える分は取り込まない
+  const capacity = await customerCapacity(supabase, tenant.id, valid.length);
+  let toInsert = valid;
+  if (!capacity.allowed && capacity.remaining !== null) {
+    toInsert = valid.slice(0, capacity.remaining);
+    errors.push({
+      row: 0,
+      message: `プラン上限(${capacity.limit}件)のため ${valid.length - toInsert.length} 件を取り込みませんでした。アップグレードで全件登録できます。`,
+    });
+  }
+
   let inserted = 0;
-  if (valid.length > 0) {
-    const supabase = createClient();
+  if (toInsert.length > 0) {
     // 100 件ずつ分割して投入
-    for (let i = 0; i < valid.length; i += 100) {
-      const chunk = valid.slice(i, i + 100);
+    for (let i = 0; i < toInsert.length; i += 100) {
+      const chunk = toInsert.slice(i, i + 100);
       const { error, count } = await supabase
         .from('customers')
         // biome-ignore lint/suspicious/noExplicitAny: 動的に組んだ行の型

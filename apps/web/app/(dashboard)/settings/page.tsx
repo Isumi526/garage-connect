@@ -42,6 +42,18 @@ export default async function SettingsPage() {
         </Card>
 
         <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <div>
+              <CardTitle>プラン・お支払い</CardTitle>
+              <CardDescription>ご利用プランの確認・アップグレード</CardDescription>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/settings/billing">プラン設定へ</Link>
+            </Button>
+          </CardHeader>
+        </Card>
+
+        <Card>
           <CardHeader>
             <CardTitle>店舗情報</CardTitle>
             <CardDescription>基本情報（編集は今後対応）</CardDescription>
