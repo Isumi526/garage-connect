@@ -21,6 +21,7 @@
     "seed": "pnpm --filter web seed",
     "verify:rls": "node scripts/verify-rls.mjs",
     "verify:phase2": "pnpm --filter web exec tsx ../../scripts/verify-phase2.ts",
+    "verify:phase3": "NODE_OPTIONS='--conditions=react-server' pnpm --filter web exec tsx ../../scripts/verify-phase3.ts",
     "prepare": "husky"
   },
   "devDependencies": {

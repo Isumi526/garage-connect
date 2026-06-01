@@ -1,7 +1,9 @@
 import { PageHeader } from '@/components/dashboard/page-header';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { requireAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
+import Link from 'next/link';
 import { InviteForm } from './invite-form';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -27,6 +29,18 @@ export default async function SettingsPage() {
       <PageHeader title="設定" description="店舗情報・メンバー管理" />
 
       <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <div>
+              <CardTitle>LINE 連携</CardTitle>
+              <CardDescription>公式アカウントの接続・友だち紐付け</CardDescription>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/settings/line">LINE 設定へ</Link>
+            </Button>
+          </CardHeader>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>店舗情報</CardTitle>
