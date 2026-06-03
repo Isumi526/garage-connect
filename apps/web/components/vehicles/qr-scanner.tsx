@@ -10,17 +10,12 @@ import {
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { useEffect, useRef, useState } from 'react';
 
-/** 復号文字列の先頭コード番号を返す（無ければ null） */
-function codeNumberOf(text: string): number | null {
-  const m = text.match(/^(\d+)\//);
-  return m?.[1] ? Number(m[1]) : null;
-}
-
 export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCertificate) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [collected, setCollected] = useState<Map<number, string>>(new Map());
+  // 読み取った復号文字列（中身でユニーク化＝実物の複数コードも全部溜まる）
+  const [collected, setCollected] = useState<string[]>([]);
   const [manual, setManual] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +36,7 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
 
   const start = async () => {
     setError(null);
+    setCollected([]);
     setScanning(true);
     try {
       const reader = new BrowserMultiFormatReader();
@@ -50,12 +46,7 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
         (result) => {
           if (!result) return;
           const text = result.getText();
-          const code = codeNumberOf(text) ?? 0;
-          setCollected((prev) => {
-            const next = new Map(prev);
-            next.set(code, text);
-            return next;
-          });
+          setCollected((prev) => (prev.includes(text) ? prev : [...prev, text]));
         },
       );
       controlsRef.current = controls;
@@ -96,8 +87,6 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
     setManual(codes.join('\n'));
   };
 
-  const collectedCodes = [...collected.keys()].filter((c) => c > 0).sort();
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -110,12 +99,33 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
             停止
           </Button>
         )}
-        {scanning && collected.size > 0 && (
-          <Button type="button" onClick={() => applyTexts([...collected.values()])}>
-            解析して反映（{collectedCodes.length} コード取得）
+        {collected.length > 0 && (
+          <Button type="button" onClick={() => applyTexts(collected)}>
+            解析して反映（{collected.length} コード取得）
           </Button>
         )}
       </div>
+
+      {/* 読み取った生データ（実物QRの校正用デバッグ表示）。
+          車検証を順にかざすと、各QRの復号テキストがここに溜まります。 */}
+      {collected.length > 0 && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
+          <p className="mb-1 text-xs font-medium text-amber-800">
+            読み取った生データ（{collected.length} 件）—
+            校正用にこの内容をコピーして共有してください（氏名・住所はダミーに置換可）
+          </p>
+          <ol className="list-decimal space-y-1 pl-5">
+            {collected.map((t, i) => (
+              <li
+                key={`${i}-${t.slice(0, 12)}`}
+                className="break-all font-mono text-[11px] text-amber-900"
+              >
+                {t}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {/* video は常時マウント（条件レンダリングだと start() 時に ref が null になり
           カメラ映像が表示中の要素に繋がらず黒画面になるため）。非表示は CSS で制御。 */}
