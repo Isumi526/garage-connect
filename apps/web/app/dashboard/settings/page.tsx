@@ -44,6 +44,18 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <div>
+              <CardTitle>営業時間・予約枠</CardTitle>
+              <CardDescription>営業時間・定休日・予約枠の設定</CardDescription>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/settings/schedule">スケジュール設定へ</Link>
+            </Button>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <div>
               <CardTitle>プラン・お支払い</CardTitle>
               <CardDescription>ご利用プランの確認・アップグレード</CardDescription>
             </div>

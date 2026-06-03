@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -94,6 +99,47 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_hours: {
+        Row: {
+          close_time: string
+          created_at: string
+          id: string
+          is_closed: boolean
+          open_time: string
+          tenant_id: string
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          close_time?: string
+          created_at?: string
+          id?: string
+          is_closed?: boolean
+          open_time?: string
+          tenant_id: string
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          close_time?: string
+          created_at?: string
+          id?: string
+          is_closed?: boolean
+          open_time?: string
+          tenant_id?: string
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_hours_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -495,6 +541,53 @@ export type Database = {
           },
         ]
       }
+      schedule_events: {
+        Row: {
+          all_day: boolean
+          created_at: string
+          end_at: string
+          event_type: string
+          id: string
+          notes: string | null
+          start_at: string
+          tenant_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          all_day?: boolean
+          created_at?: string
+          end_at: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          start_at: string
+          tenant_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          all_day?: boolean
+          created_at?: string
+          end_at?: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          start_at?: string
+          tenant_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_users: {
         Row: {
           created_at: string
@@ -592,6 +685,8 @@ export type Database = {
           line_channel_secret_encrypted: string | null
           logo_url: string | null
           name: string
+          slot_capacity: number
+          slot_minutes: number
           slug: string
           status: string
           trial_ends_at: string | null
@@ -608,6 +703,8 @@ export type Database = {
           line_channel_secret_encrypted?: string | null
           logo_url?: string | null
           name: string
+          slot_capacity?: number
+          slot_minutes?: number
           slug: string
           status?: string
           trial_ends_at?: string | null
@@ -624,6 +721,8 @@ export type Database = {
           line_channel_secret_encrypted?: string | null
           logo_url?: string | null
           name?: string
+          slot_capacity?: number
+          slot_minutes?: number
           slug?: string
           status?: string
           trial_ends_at?: string | null
@@ -875,4 +974,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
