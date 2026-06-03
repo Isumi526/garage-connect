@@ -76,6 +76,10 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
   };
 
   const loadDemo = () => {
+    // 車検満了日はデモ動作のため「今日 + 30 日(JST)」を YYYYMMDD で生成
+    const expiry = new Date(Date.now() + 30 * 86400000)
+      .toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' })
+      .replace(/-/g, '');
     const codes = buildDummyInspectionQRCodes({
       region: '品川',
       classNo: '500',
@@ -86,7 +90,7 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
       firstRegYYYYMM: '202004',
       ownerName: '山田太郎',
       ownerAddress: 'テスト市テスト町1-1-1',
-      inspectionExpiryYYYYMMDD: '20260401',
+      inspectionExpiryYYYYMMDD: expiry,
       registrationYYYYMMDD: '20230315',
     });
     setManual(codes.join('\n'));
