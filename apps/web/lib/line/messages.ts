@@ -12,6 +12,7 @@ export const TEMPLATE_VARIABLES = [
   { key: 'vehicle_number', label: '車両番号' },
   { key: 'expiry_date', label: '満了日' },
   { key: 'shop_name', label: '店舗名' },
+  { key: 'booking_url', label: '予約URL' },
 ] as const;
 
 /** {{key}} を vars[key] で置換する。未定義の変数は空文字に。 */

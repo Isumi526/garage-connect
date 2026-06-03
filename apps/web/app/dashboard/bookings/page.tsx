@@ -7,6 +7,7 @@ import { requireAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/server';
 import { formatJstDate, timeSlotLabel } from '@/lib/utils/timezone';
 import { BOOKING_STATUS_LABEL, BOOKING_TYPE_LABEL } from '@/lib/validations/booking';
+import Link from 'next/link';
 
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'destructive' | 'secondary'> = {
   pending: 'warning',
@@ -77,20 +78,25 @@ export default async function BookingsPage({
                       </p>
                       {b.notes && <p className="text-xs text-muted-foreground">{b.notes}</p>}
                     </div>
-                    {b.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <form action={confirmBooking.bind(null, b.id)}>
-                          <Button type="submit" size="sm">
-                            確定
-                          </Button>
-                        </form>
-                        <form action={rejectBooking.bind(null, b.id)}>
-                          <Button type="submit" size="sm" variant="outline">
-                            不可
-                          </Button>
-                        </form>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      {b.status === 'pending' && (
+                        <>
+                          <form action={confirmBooking.bind(null, b.id)}>
+                            <Button type="submit" size="sm">
+                              確定
+                            </Button>
+                          </form>
+                          <form action={rejectBooking.bind(null, b.id)}>
+                            <Button type="submit" size="sm" variant="outline">
+                              不可
+                            </Button>
+                          </form>
+                        </>
+                      )}
+                      <Button asChild size="sm" variant="ghost">
+                        <Link href={`/dashboard/bookings/${b.id}/edit`}>編集</Link>
+                      </Button>
+                    </div>
                   </li>
                 );
               })}

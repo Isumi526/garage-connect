@@ -125,13 +125,21 @@ export async function runDailyNotifications(
         continue;
       }
 
-      const text = applyTemplate(template.body, {
+      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      const bookingUrl = liffId ? `https://liff.line.me/${liffId}?t=${tenant.id}` : '';
+
+      let text = applyTemplate(template.body, {
         customer_name: customer?.name,
         vehicle_name: vehicle?.vehicle_name ?? vehicle?.vehicle_number,
         vehicle_number: vehicle?.vehicle_number,
         expiry_date: format(new Date(target.expiryDate), 'yyyy年M月d日'),
         shop_name: tenant.name,
+        booking_url: bookingUrl,
       });
+      // テンプレに URL が含まれていなければ、予約LIFFのURLを必ず付ける
+      if (bookingUrl && !text.includes(bookingUrl)) {
+        text += `\n\n▼ ご予約はこちらから\n${bookingUrl}`;
+      }
 
       try {
         const client = await getClient();

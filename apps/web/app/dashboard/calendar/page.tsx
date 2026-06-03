@@ -23,9 +23,12 @@ import Link from 'next/link';
 import { EventForm } from './event-form';
 
 const EVENT_CHIP: Record<string, string> = {
+  inspection: 'bg-indigo-100 text-indigo-800',
+  maintenance: 'bg-amber-100 text-amber-800',
+  visitor: 'bg-purple-100 text-purple-800',
+  other: 'bg-slate-100 text-slate-700',
   closure: 'bg-red-100 text-red-800',
   open: 'bg-emerald-100 text-emerald-800',
-  other: 'bg-slate-100 text-slate-700',
 };
 
 function weekdayOf(date: string): number {
@@ -143,20 +146,22 @@ export default async function CalendarPage({ searchParams }: { searchParams: { m
                   </div>
                   <div className="mt-0.5 space-y-0.5">
                     {bks.slice(0, 2).map((b) => (
-                      <div
+                      <Link
                         key={b.id}
-                        className="truncate rounded bg-blue-100 px-1 text-[10px] text-blue-800"
+                        href={`/dashboard/bookings/${b.id}/edit`}
+                        className="block truncate rounded bg-blue-100 px-1 text-[10px] text-blue-800 hover:bg-blue-200"
                       >
                         {b.label}
-                      </div>
+                      </Link>
                     ))}
                     {evs.slice(0, 2).map((e) => (
-                      <div
+                      <Link
                         key={e.id}
-                        className={`truncate rounded px-1 text-[10px] ${EVENT_CHIP[e.type] ?? 'bg-slate-100'}`}
+                        href={`/dashboard/calendar/${e.id}/edit`}
+                        className={`block truncate rounded px-1 text-[10px] hover:opacity-80 ${EVENT_CHIP[e.type] ?? 'bg-slate-100'}`}
                       >
                         {e.label}
-                      </div>
+                      </Link>
                     ))}
                     {bks.length + evs.length > 4 && (
                       <div className="text-[10px] text-muted-foreground">

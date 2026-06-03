@@ -1,12 +1,22 @@
 import { z } from 'zod';
 import { optionalString } from './helpers';
 
-export const eventTypes = ['closure', 'open', 'other'] as const;
+export const eventTypes = [
+  'inspection',
+  'maintenance',
+  'visitor',
+  'other',
+  'closure',
+  'open',
+] as const;
 
 export const EVENT_TYPE_LABEL: Record<string, string> = {
+  inspection: '車検',
+  maintenance: '点検',
+  visitor: '来客',
+  other: '用事',
   closure: '休業',
   open: '臨時営業',
-  other: '用事',
 };
 
 export const scheduleEventInputSchema = z
