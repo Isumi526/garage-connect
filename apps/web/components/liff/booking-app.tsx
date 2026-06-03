@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { type LiffContext, initLiff } from '@/lib/liff/client';
-import { TIME_SLOTS, formatJstDate, timeSlotLabel, todayJst } from '@/lib/utils/timezone';
+import { formatJstDate, timeSlotLabel } from '@/lib/utils/timezone';
 import { BOOKING_STATUS_LABEL, BOOKING_TYPE_LABEL, bookingTypes } from '@/lib/validations/booking';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -115,6 +115,7 @@ export function BookingApp() {
   return (
     <LinkedView
       data={data}
+      tenantId={ctx.tenantId ?? ''}
       onBooked={() => loadSession(ctx)}
       submitBooking={async (form) => {
         const res = await fetch('/api/liff/bookings', {
@@ -134,12 +135,16 @@ export function BookingApp() {
   );
 }
 
+type DayAvailability = { date: string; slots: string[] };
+
 function LinkedView({
   data,
+  tenantId,
   onBooked,
   submitBooking,
 }: {
   data: SessionData;
+  tenantId: string;
   onBooked: () => void;
   submitBooking: (form: Record<string, string>) => Promise<void>;
 }) {
@@ -148,8 +153,33 @@ function LinkedView({
   const [done, setDone] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // 空き枠
+  const [days, setDays] = useState<DayAvailability[] | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
+
+  const loadAvailability = useCallback(async () => {
+    const res = await fetch('/api/liff/availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId }),
+    });
+    const j = await res.json().catch(() => ({ days: [] }));
+    setDays(j.days ?? []);
+  }, [tenantId]);
+
+  useEffect(() => {
+    loadAvailability();
+  }, [loadAvailability]);
+
+  const slotsForDate = days?.find((d) => d.date === selectedDate)?.slots ?? [];
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!selectedDate || !selectedSlot) {
+      setFormError('希望日と時間を選択してください');
+      return;
+    }
     setSubmitting(true);
     setFormError(null);
     const fd = new FormData(e.currentTarget);
@@ -157,14 +187,18 @@ function LinkedView({
       await submitBooking({
         vehicle_id: String(fd.get('vehicle_id') ?? ''),
         booking_type: String(fd.get('booking_type') ?? 'inspection'),
-        preferred_date: String(fd.get('preferred_date') ?? ''),
-        preferred_time_slot: String(fd.get('preferred_time_slot') ?? 'anytime'),
+        preferred_date: selectedDate,
+        preferred_time_slot: selectedSlot,
         notes: String(fd.get('notes') ?? ''),
       });
       setDone(true);
+      setSelectedDate('');
+      setSelectedSlot('');
       onBooked();
+      loadAvailability();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : '予約に失敗しました');
+      loadAvailability(); // 枠が埋まった場合に最新化
     } finally {
       setSubmitting(false);
     }
@@ -239,31 +273,71 @@ function LinkedView({
                     ))}
                   </select>
                 </Field>
-                <Field label="希望日">
-                  {/* input[type=date] は YYYY-MM-DD 文字列。UTC 変換せず JST のまま送る */}
-                  <input
-                    type="date"
-                    name="preferred_date"
-                    required
-                    min={todayJst()}
-                    className={selectClass}
-                  />
+                <Field label="希望日（空きのある日）">
+                  {days === null ? (
+                    <p className="text-sm text-muted-foreground">空き状況を読み込み中…</p>
+                  ) : days.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      現在予約可能な枠がありません。お電話でお問い合わせください。
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {days.map((d) => (
+                        <button
+                          key={d.date}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDate(d.date);
+                            setSelectedSlot('');
+                          }}
+                          className={`rounded-md border px-3 py-1.5 text-sm ${
+                            selectedDate === d.date
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'bg-background'
+                          }`}
+                        >
+                          {formatJstDate(d.date)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </Field>
-                <Field label="時間帯">
-                  <select name="preferred_time_slot" defaultValue="anytime" className={selectClass}>
-                    {TIME_SLOTS.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+
+                {selectedDate && (
+                  <Field label="時間">
+                    <div className="flex flex-wrap gap-2">
+                      {slotsForDate.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setSelectedSlot(s)}
+                          className={`rounded-md border px-3 py-1.5 text-sm ${
+                            selectedSlot === s
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'bg-background'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                )}
+
                 <Field label="ご要望（任意）">
                   <Textarea name="notes" rows={3} />
                 </Field>
                 {formError && <p className="text-sm text-destructive">{formError}</p>}
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? '送信中…' : 'この内容で予約する'}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={submitting || !selectedDate || !selectedSlot}
+                >
+                  {submitting
+                    ? '送信中…'
+                    : selectedDate && selectedSlot
+                      ? `${formatJstDate(selectedDate)} ${selectedSlot} で予約する`
+                      : 'この内容で予約する'}
                 </Button>
               </form>
             </CardContent>

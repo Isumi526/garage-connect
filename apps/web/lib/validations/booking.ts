@@ -6,7 +6,8 @@ export const bookingInputSchema = z.object({
   vehicle_id: z.string().uuid('車両を選択してください'),
   booking_type: z.enum(bookingTypes).default('inspection'),
   preferred_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '希望日を選択してください'),
-  preferred_time_slot: z.enum(['morning', 'afternoon', 'anytime']).default('anytime'),
+  // 予約枠（HH:MM）。空き枠から選択する。
+  preferred_time_slot: z.string().regex(/^\d{2}:\d{2}$/, '時間枠を選択してください'),
   notes: z.preprocess(
     (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
     z.string().trim().max(500).optional(),

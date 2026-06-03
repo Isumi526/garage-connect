@@ -1,6 +1,7 @@
 import { resolveLiffSession } from '@/lib/liff/session';
 import { getLineClientForTenant } from '@/lib/line/client';
 import { bookingReceivedText, textMessage } from '@/lib/line/messages';
+import { type BizHour, computeAvailability } from '@/lib/scheduling/availability';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { formatJstDate, timeSlotLabel } from '@/lib/utils/timezone';
 import { BOOKING_TYPE_LABEL, bookingInputSchema } from '@/lib/validations/booking';
@@ -46,6 +47,50 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (!vehicle) {
     return NextResponse.json({ error: 'vehicle not found for this customer' }, { status: 400 });
+  }
+
+  // 選択された枠が今も空いているか再検証（二重予約・締切後を防ぐ）
+  const { data: tenantSlot } = await admin
+    .from('tenants')
+    .select('slot_minutes, slot_capacity')
+    .eq('id', tenantId)
+    .single();
+  const [{ data: bh }, { data: cl }, { data: bk }] = await Promise.all([
+    admin
+      .from('business_hours')
+      .select('weekday, open_time, close_time, is_closed')
+      .eq('tenant_id', tenantId),
+    admin
+      .from('schedule_events')
+      .select('start_at, end_at')
+      .eq('tenant_id', tenantId)
+      .eq('event_type', 'closure'),
+    admin
+      .from('bookings')
+      .select('preferred_date, preferred_time_slot')
+      .eq('tenant_id', tenantId)
+      .eq('preferred_date', parsed.data.preferred_date)
+      .in('status', ['pending', 'confirmed']),
+  ]);
+  const avail = computeAvailability({
+    hours: (bh ?? []) as BizHour[],
+    closures: cl ?? [],
+    bookings: bk ?? [],
+    slotMinutes: tenantSlot?.slot_minutes ?? 30,
+    slotCapacity: tenantSlot?.slot_capacity ?? 1,
+    fromDate: parsed.data.preferred_date,
+    days: 1,
+    nowMs: Date.now(),
+  });
+  const open = avail[0]?.slots.includes(parsed.data.preferred_time_slot) ?? false;
+  if (!open) {
+    return NextResponse.json(
+      {
+        error: 'slot_unavailable',
+        message: '選択された枠は満席または受付終了です。別の枠をお選びください。',
+      },
+      { status: 409 },
+    );
   }
 
   const { data: booking, error } = await admin

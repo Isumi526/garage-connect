@@ -36,5 +36,7 @@ export const TIME_SLOTS = [
 ] as const;
 
 export function timeSlotLabel(value: string | null): string {
-  return TIME_SLOTS.find((s) => s.value === value)?.label ?? value ?? '指定なし';
+  if (!value) return '指定なし';
+  if (/^\d{2}:\d{2}$/.test(value)) return `${value}〜`; // 新形式: 予約枠の開始時刻
+  return TIME_SLOTS.find((s) => s.value === value)?.label ?? value; // 旧形式の互換
 }
