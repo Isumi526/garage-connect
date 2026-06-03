@@ -10,9 +10,20 @@ import type { ParsedInspectionCertificate } from '@/lib/qr/inspection-certificat
 import { useState } from 'react';
 import { useFormState } from 'react-dom';
 
-export function ScanFlow() {
+type CustomerOption = {
+  id: string;
+  name: string;
+  corporate_name: string | null;
+  customer_type: string;
+};
+
+const labelOf = (c: CustomerOption) =>
+  c.customer_type === 'corporate' && c.corporate_name ? c.corporate_name : c.name;
+
+export function ScanFlow({ customers }: { customers: CustomerOption[] }) {
   const [state, formAction] = useFormState<ScanRegisterState, FormData>(registerFromQr, null);
   const [parsed, setParsed] = useState<ParsedInspectionCertificate | null>(null);
+  const [mode, setMode] = useState<'new' | 'existing'>('new');
 
   return (
     <div className="space-y-6">
@@ -27,22 +38,72 @@ export function ScanFlow() {
 
       {parsed && (
         <form action={formAction}>
+          <input type="hidden" name="mode" value={mode} />
           <Card>
             <CardHeader>
-              <CardTitle>2. 内容を確認して登録</CardTitle>
+              <CardTitle>2. 登録先を選んで登録</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                QR から自動入力しました。必要に応じて修正してください。
-              </p>
-
+              {/* 顧客の扱い：新規 or 既存 */}
               <fieldset className="space-y-3 rounded-md border p-4">
-                <legend className="px-1 text-sm font-medium">顧客（使用者）</legend>
-                <input type="hidden" name="customer_type" value="individual" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="氏名 *" name="name" defaultValue={parsed.ownerName} required />
-                  <Field label="住所" name="address" defaultValue={parsed.ownerAddress} />
+                <legend className="px-1 text-sm font-medium">顧客</legend>
+                <div className="flex gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="mode_ui"
+                      checked={mode === 'new'}
+                      onChange={() => setMode('new')}
+                    />
+                    新規顧客として登録
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="mode_ui"
+                      checked={mode === 'existing'}
+                      onChange={() => setMode('existing')}
+                      disabled={customers.length === 0}
+                    />
+                    既存顧客に車両を追加
+                    {customers.length === 0 && (
+                      <span className="text-xs text-muted-foreground">（顧客なし）</span>
+                    )}
+                  </label>
                 </div>
+
+                {mode === 'new' ? (
+                  <>
+                    <input type="hidden" name="customer_type" value="individual" />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="氏名 *" name="name" defaultValue={parsed.ownerName} required />
+                      <Field label="住所" name="address" defaultValue={parsed.ownerAddress} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="existing_customer_id">追加先の顧客 *</Label>
+                    <select
+                      id="existing_customer_id"
+                      name="existing_customer_id"
+                      required
+                      defaultValue=""
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="" disabled>
+                        顧客を選択
+                      </option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {labelOf(c)}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      使用者名「{parsed.ownerName}」と同じ顧客を選んでください。
+                    </p>
+                  </div>
+                )}
               </fieldset>
 
               <fieldset className="space-y-3 rounded-md border p-4">
@@ -78,7 +139,9 @@ export function ScanFlow() {
 
               {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
               <div className="w-56">
-                <SubmitButton>顧客と車両を登録</SubmitButton>
+                <SubmitButton>
+                  {mode === 'new' ? '顧客と車両を登録' : 'この顧客に車両を追加'}
+                </SubmitButton>
               </div>
             </CardContent>
           </Card>
