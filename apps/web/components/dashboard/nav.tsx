@@ -1,7 +1,16 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
-import { Bell, Calendar, Car, FileText, LayoutDashboard, Settings, Users } from 'lucide-react';
+import {
+  Bell,
+  Calendar,
+  CalendarDays,
+  Car,
+  FileText,
+  LayoutDashboard,
+  Settings,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -11,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/vehicles', label: '車両', icon: Car },
   { href: '/dashboard/notifications', label: '配信ログ', icon: Bell },
   { href: '/dashboard/bookings', label: '予約', icon: Calendar },
+  { href: '/dashboard/calendar', label: 'カレンダー', icon: CalendarDays },
   { href: '/dashboard/templates', label: '通知テンプレ', icon: FileText },
   { href: '/dashboard/settings', label: '設定', icon: Settings },
 ];
