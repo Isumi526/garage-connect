@@ -120,7 +120,13 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
       {scanning && (
         <div className="overflow-hidden rounded-md border bg-black">
           {/* biome-ignore lint/a11y/useMediaCaption: ライブカメラ映像のため字幕は不要 */}
-          <video ref={videoRef} className="aspect-video w-full" />
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="aspect-video w-full object-cover"
+          />
         </div>
       )}
 
