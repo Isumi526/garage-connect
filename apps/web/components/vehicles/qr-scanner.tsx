@@ -117,19 +117,19 @@ export function QrScanner({ onParsed }: { onParsed: (data: ParsedInspectionCerti
         )}
       </div>
 
-      {scanning && (
-        <div className="overflow-hidden rounded-md border bg-black">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="aspect-video w-full object-cover"
-          >
-            <track kind="captions" />
-          </video>
-        </div>
-      )}
+      {/* video は常時マウント（条件レンダリングだと start() 時に ref が null になり
+          カメラ映像が表示中の要素に繋がらず黒画面になるため）。非表示は CSS で制御。 */}
+      <div className={`overflow-hidden rounded-md border bg-black ${scanning ? '' : 'hidden'}`}>
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="aspect-video w-full object-cover"
+        >
+          <track kind="captions" />
+        </video>
+      </div>
 
       <div className="rounded-md border bg-muted/30 p-4">
         <p className="mb-2 text-sm font-medium">
