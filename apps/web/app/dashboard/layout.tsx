@@ -17,7 +17,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-64 shrink-0 flex-col border-r bg-card p-4 md:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r bg-card p-4 md:flex print:hidden">
         <div className="mb-6 px-2">
           <p className="text-lg font-bold">Garage Connect</p>
           <p className="truncate text-sm text-muted-foreground">{tenant.name}</p>

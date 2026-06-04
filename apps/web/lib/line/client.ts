@@ -58,7 +58,24 @@ export function createLineClient(accessToken: string) {
       const info = await res.json();
       return { ok: true, botUserId: info.userId };
     },
+    /** 公式アカウントの bot 情報（友だち追加QR/URL 生成に使う basicId 等） */
+    async botInfo(): Promise<{
+      basicId?: string;
+      displayName?: string;
+      pictureUrl?: string;
+      userId?: string;
+    } | null> {
+      const res = await fetch(`${LINE_API}/info`, { headers });
+      if (!res.ok) return null;
+      return res.json();
+    },
   };
+}
+
+/** Basic ID（@xxxx）から友だち追加 URL を作る */
+export function friendAddUrl(basicId: string): string {
+  const id = basicId.startsWith('@') ? basicId : `@${basicId}`;
+  return `https://line.me/R/ti/p/${encodeURIComponent(id)}`;
 }
 
 export type LineClient = ReturnType<typeof createLineClient>;

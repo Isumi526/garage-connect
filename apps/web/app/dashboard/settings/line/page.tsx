@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { requireAuth } from '@/lib/auth/context';
 import { clientEnv } from '@/lib/env';
+import { friendAddUrl, getLineClientForTenant } from '@/lib/line/client';
+import { qrDataUrl } from '@/lib/qr/generate';
 import { createClient } from '@/lib/supabase/server';
+import Link from 'next/link';
 import { LineConfigForm } from './line-config-form';
 
 export default async function LineSettingsPage() {
@@ -33,11 +36,59 @@ export default async function LineSettingsPage() {
 
   const webhookUrl = `${clientEnv.NEXT_PUBLIC_APP_URL}/api/line/webhook/${tenant.id}`;
 
+  // 友だち追加QR（アクセストークンがあれば bot 情報から生成）
+  let friendQr: { dataUrl: string; url: string; name?: string } | null = null;
+  if (tenantRow?.line_channel_access_token_encrypted) {
+    try {
+      const client = await getLineClientForTenant(supabase, tenant.id);
+      const info = await client.botInfo();
+      if (info?.basicId) {
+        const url = friendAddUrl(info.basicId);
+        friendQr = { dataUrl: await qrDataUrl(url, 200), url, name: info.displayName };
+      }
+    } catch {
+      // トークン未設定/失効時は QR を出さない
+    }
+  }
+
   return (
     <>
       <PageHeader title="LINE 連携設定" description="自社の LINE 公式アカウントを接続します" />
 
       <div className="space-y-6">
+        {friendQr && (
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <div>
+                <CardTitle>友だち追加QR</CardTitle>
+                <CardDescription>
+                  受付でお客様に読み取ってもらうと、公式アカウントが友だち追加されます。
+                </CardDescription>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/dashboard/settings/line/friend-qr" target="_blank">
+                  大きく表示・印刷
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center gap-3 sm:flex-row sm:items-center">
+              <img src={friendQr.dataUrl} alt="友だち追加QR" width={200} height={200} />
+              <div className="space-y-1 text-sm">
+                {friendQr.name && <p className="font-medium">{friendQr.name}</p>}
+                <p className="text-muted-foreground">友だち追加URL:</p>
+                <a
+                  href={friendQr.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-primary hover:underline"
+                >
+                  {friendQr.url}
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Webhook URL</CardTitle>
