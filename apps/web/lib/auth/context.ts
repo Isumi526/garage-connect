@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database.types';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 
 type ShopUser = Database['public']['Tables']['shop_users']['Row'];
 type Tenant = Database['public']['Tables']['tenants']['Row'];
@@ -16,8 +17,10 @@ export type AuthContext = {
  * 現在ログイン中のユーザー・所属テナントを取得する。
  * 未ログイン、またはテナント未割当ての場合は /login へリダイレクトする。
  * Server Component / Server Action から呼ぶこと。
+ *
+ * cache() で同一リクエスト内の重複呼び出し（layout + page など）を 1 回に集約する。
  */
-export async function requireAuth(): Promise<AuthContext> {
+export const requireAuth = cache(async (): Promise<AuthContext> => {
   const supabase = createClient();
   const {
     data: { user },
@@ -48,4 +51,4 @@ export async function requireAuth(): Promise<AuthContext> {
     shopUser: shopUser as ShopUser,
     tenant,
   };
-}
+});
