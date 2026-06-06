@@ -27,32 +27,25 @@ export async function requireAuth(): Promise<AuthContext> {
     redirect('/login');
   }
 
-  // RLS により自テナントの行のみ返る
-  const { data: shopUser } = await supabase
+  // shop_users と tenants を 1 クエリ（join）で取得し、DB 往復を 2→1 に削減。
+  // RLS により自テナントの行のみ返る。
+  const { data: row } = await supabase
     .from('shop_users')
-    .select('*')
+    .select('*, tenant:tenants(*)')
     .eq('id', user.id)
     .single();
 
-  if (!shopUser) {
-    // Auth ユーザーは居るが shop_users 未作成（異常系）
+  const tenant = (Array.isArray(row?.tenant) ? row?.tenant[0] : row?.tenant) as Tenant | undefined;
+  if (!row || !tenant) {
+    // Auth ユーザーは居るが shop_users 未作成 or テナント無し（異常系）
     redirect('/login');
   }
 
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('*')
-    .eq('id', shopUser.tenant_id)
-    .single();
-
-  if (!tenant) {
-    redirect('/login');
-  }
-
+  const { tenant: _omit, ...shopUser } = row;
   return {
     userId: user.id,
     email: user.email ?? shopUser.email,
-    shopUser,
+    shopUser: shopUser as ShopUser,
     tenant,
   };
 }
