@@ -63,6 +63,44 @@ claude --dangerously-skip-permissions
 
 ---
 
+## 🤖 自走運用ポリシー（/run・/next・/ship が参照）
+
+MVP 構築後の継続開発は、Notion バックログ駆動で自走する。`/run`（連続）・`/next`（1件）・`/ship`（本番反映）はこのポリシーに従う。
+
+### プロジェクト固有値
+- **スタック**: Next.js 14（App Router・SSR/RSC）/ Supabase / LINE Messaging API / Stripe / pnpm workspace（アプリは **`apps/web` 1本**）。webhook・cron は **Next.js の API route handlers**（Supabase edge functions は不使用）。
+- **本番 Supabase ref**: `ezgktyhxnoimczbhokkv`（東京）
+- **Vercel プロジェクト**: `garage-connect`（単一アプリ・Root Directory=`apps/web`・リージョン hnd1）
+- **GitHub**: `Isumi526/garage-connect`（public）。`main`=本番（Vercel自動デプロイ）/ `dev`=統合用。
+- **バックログ**: 複数プロジェクト共用の Notion DB（`バックログ管理`）。自案件は `.env` の `BACKLOG_PROJECT_ID`（案件page_id）で絞る。盤面取得は `node --env-file=.env scripts/next-target.mjs`（notion-search は使わない）。
+- **ローカル開発**: 別ポートのローカル Supabase（API 55321 / Studio 55323 / DB 55322）で隔離起動（`supabase/config.toml` のポート変更はローカル作業ツリーのみ・コミットしない）。
+
+### 自走ポリシー（境界）
+- **可逆 ＆ dev 内の作業 = 自走**（設計→実装→ローカル検証→dev マージまで人に聞かず進める）。
+- **不可逆・本番影響・意図/業務判断が要るもの = 人**（勝手に決め打ちしない）。
+  - (A) 意図が曖昧で人にしか決められない → 人ボール「要回答」（質問＋案）に記録してスキップ。
+  - E2E/検証が 3 回直しても緑にならない → 人ボール「要対応」に記録してスキップ。
+
+### 本番 migration 適用
+- **人の明示承認 ＋「追加のみ DDL」に限り CC が psql で実行可**（`.env` の `SUPABASE_PROD_DB_URL`、値はログ/チャットに残さない）。
+- **破壊的（DROP/DELETE/TRUNCATE/UPDATE/型変更/NOT NULL 追加 等）を1つでも含むなら CC は実行せず、人手の SQL エディタ実行＋事前バックアップ**を促して停止。
+- 適用は **Merge（＝Vercel本番デプロイ）より前**に行う。`supabase db push` は禁止（個別 SQL 適用のみ）。
+
+### Merge（本番反映ゲート）
+- 本番反映は **dev → PR → main**。**CC は main へ直接 push しない**。
+- **Merge は、人がタイミングを明示承認（「今 Merge して」等）した時のみ** CC が `gh pr merge` で実行する。それ以外は待機。
+
+### 停止 ＝ LINE 通知（例外なし）
+- 人の入力・操作・承認待ちで止まる時は、**直前に必ず** `node scripts/notify-humanball.mjs`（best-effort・失敗無視）。
+- **「対話中だから」を理由にスキップしない**（見られているか判断できないため常に通知）。1停止で複数承認をまとめる時のみ通知を1回にまとめる。
+- 通知の `--task` には素のタスク名を渡せばよい（スクリプトが自動で **[Garage]** を付与。複数プロジェクト共用の LINE チャンネルで判別するため）。
+
+### 品質担保
+- **ローカル検証を全 green**：`pnpm test`（vitest）＋ 必要に応じ `scripts/verify-*.mjs`。dev は Vercel preview 無効のため preview URL は使わない／案内しない。
+- **Merge 後の本番スモーク（ハードリロード必須）**：Cmd/Ctrl+Shift+R。直後は旧バンドルがキャッシュされ、ハードリロードしないと誤判定する。
+
+---
+
 ## 🔒 1. 機密情報の取り扱いルール（絶対遵守）
 
 このリポジトリは **GitHub Public** で公開されます。以下を**絶対にコミットしてはいけません**。
