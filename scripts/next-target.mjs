@@ -1,107 +1,168 @@
-#!/usr/bin/env node
-/**
- * バックログDBから「要件定義済み」のタスクを、案件(プロジェクト)で絞って優先度順に全件取得する。
- * 複数プロジェクトを同一Notionバックログで運用するため、案件 relation で自プロジェクト分のみに絞る。
- *
- * 必要な環境変数（.env）:
- *   NOTION_TOKEN        … Notion インテグレーショントークン
- *   BACKLOG_DB_ID       … バックログDBの ID
- *   BACKLOG_PROJECT_ID  … このプロジェクトの案件ページID（絞り込みキー）
- *
- * 出力: 盤面（要件定義済み一覧）＋ 末尾に NEXT_TARGET_URL=<最優先タスクのURL>
- * 実行: node --env-file=.env scripts/next-target.mjs
- */
+// ============================================================
+//  scripts/next-target.mjs
+//  Notionバックログから「要件定義済み」を優先度順で全件取得し、
+//  次に着手すべきターゲット（最優先の1件）を出力する。
+//  - notion-search の取りこぼし対策（確実に全件・フィルタはAPI側で）
+//  - 旧 databases/query が version/endpoint エラーなら
+//    data_sources/query (Notion-Version: 2025-09-03) にフォールバック
+//
+//  ※バックログDBは sido / osarAI / Garage Connect の3プロジェクトで共用。
+//    タスクは「案件名」relation（説明=「案件管理マスタと紐付け」。"案件名 1" ではない）で
+//    各案件に紐づく。本スクリプトは .env の BACKLOG_PROJECT_ID（自分の案件page_id）で絞り、
+//    自分の案件のタスクだけを拾う。
+//
+//  ※重要: 新APIでは relation 値がインラインで空配列に見えるため、クライアント側で
+//    relation を読んで絞るのは動かない。必ず API のサーバ側フィルタ(relation contains)を使う。
+//
+//  使い方: node scripts/next-target.mjs
+//  必要env(.env): NOTION_TOKEN, BACKLOG_PROJECT_ID（必須・自分の案件page_id）, (任意) BACKLOG_DB_ID / BACKLOG_DATA_SOURCE_ID
+// ============================================================
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const TOKEN = process.env.NOTION_TOKEN;
-const DB_ID = process.env.BACKLOG_DB_ID;
-const PROJECT_ID = process.env.BACKLOG_PROJECT_ID;
-const NOTION_VERSION = '2022-06-28';
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-const PRIORITY_ORDER = { 緊急: 0, 高: 1, 中: 2, 低: 3 };
+function loadEnv(p) {
+  const out = {};
+  try {
+    for (const line of readFileSync(p, 'utf8').split('\n')) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+      if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  } catch {
+    /* ignore */
+  }
+  return out;
+}
 
-if (!TOKEN || !DB_ID) {
-  console.error('NOTION_TOKEN / BACKLOG_DB_ID が未設定です（.env を確認）。');
+const env = loadEnv(resolve(ROOT, '.env'));
+const TOKEN = process.env.NOTION_TOKEN || env.NOTION_TOKEN;
+const DB_ID = process.env.BACKLOG_DB_ID || env.BACKLOG_DB_ID || '6e7dd24739dd431688564b12f64d8ebd';
+const DATA_SOURCE_ID =
+  process.env.BACKLOG_DATA_SOURCE_ID ||
+  env.BACKLOG_DATA_SOURCE_ID ||
+  'a7f5a28f-22af-4bc1-a512-4d427a934f31';
+const PROJECT_ID = process.env.BACKLOG_PROJECT_ID || env.BACKLOG_PROJECT_ID;
+
+if (!TOKEN) {
+  console.error('✗ NOTION_TOKEN が .env にありません');
+  process.exit(1);
+}
+// 【安全装置】案件page_id 未設定なら即停止。フィルタなしで全プロジェクトのタスクを拾う事故を防ぐ。
+if (!PROJECT_ID) {
+  console.error('✗ BACKLOG_PROJECT_ID が .env にありません（自分の案件page_idを設定してください）');
   process.exit(1);
 }
 
-async function notion(path, init = {}) {
-  const res = await fetch(`https://api.notion.com/v1/${path}`, {
-    ...init,
+// 既知の案件page_id → 表示名（共用バックログDBの各プロジェクト）
+const PROJECT_NAMES = {
+  '3540ff81-c56b-802e-871d-ca995e01718f': 'SIDO',
+  '37a0ff81-c56b-81d9-a527-eebd543686c3': 'osarAI',
+  '37a0ff81-c56b-81b5-9341-c89f8bd69355': 'Garage Connect',
+};
+const norm = (id) => (id || '').replace(/-/g, '');
+const PROJECT_NAME =
+  Object.entries(PROJECT_NAMES).find(([id]) => norm(id) === norm(PROJECT_ID))?.[1] ||
+  `(page_id …${norm(PROJECT_ID).slice(-6)})`;
+
+const STATUS_PROP = 'ステータス';
+const PRIORITY_PROP = '優先順位';
+const TITLE_PROP = 'タスク名';
+const PROJECT_PROP = '案件名'; // relation（説明=「案件管理マスタと紐付け」）。"案件名 1" ではない方
+const TARGET_STATUS = '要件定義済み';
+const PRIORITY_RANK = { 緊急: 0, 高: 1, 中: 2, 低: 3 };
+// ステータス＝要件定義済み かつ 案件名relationが自分の案件を含む、で絞る。
+// 【仕様】案件名が未設定（空）のタスクは relation 一致しないため、どのプロジェクトでも拾わない（＝自然に除外。正しい挙動）。
+const filter = {
+  and: [
+    { property: STATUS_PROP, status: { equals: TARGET_STATUS } },
+    { property: PROJECT_PROP, relation: { contains: PROJECT_ID } },
+  ],
+};
+
+function queryDatabase(cursor) {
+  return fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${TOKEN}`,
-      'Notion-Version': NOTION_VERSION,
+      'Notion-Version': '2022-06-28',
       'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
     },
+    body: JSON.stringify({ filter, page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) }),
   });
-  const json = await res.json();
-  if (json.object === 'error') throw new Error(`${json.code}: ${json.message}`);
-  return json;
 }
 
-async function main() {
-  // DB スキーマからプロパティ名を解決（名称ゆれに強くする）
-  const db = await notion(`databases/${DB_ID}`);
-  const props = db.properties ?? {};
-  const byType = (t) => Object.entries(props).find(([, v]) => v.type === t)?.[0];
-  const statusProp = byType('status') ?? 'ステータス';
-  const titleProp = byType('title') ?? 'タスク名';
-  const priorityProp =
-    Object.keys(props).find((k) => /優先/.test(k)) ?? byType('select') ?? '優先順位';
-  // 案件(プロジェクト)を表す relation プロパティ
-  const projectProp = byType('relation');
+function queryDataSource(cursor) {
+  return fetch(`https://api.notion.com/v1/data_sources/${DATA_SOURCE_ID}/query`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TOKEN}`,
+      'Notion-Version': '2025-09-03',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ filter, page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) }),
+  });
+}
 
-  // フィルタ: ステータス=要件定義済み（＋案件 relation があれば自案件で絞る）
-  const and = [{ property: statusProp, status: { equals: '要件定義済み' } }];
-  if (projectProp && PROJECT_ID) {
-    and.push({ property: projectProp, relation: { contains: PROJECT_ID } });
-  }
-
-  const tasks = [];
+async function paginate(doQuery) {
+  const results = [];
   let cursor;
   do {
-    const body = { filter: { and }, page_size: 100 };
-    if (cursor) body.start_cursor = cursor;
-    const res = await notion(`databases/${DB_ID}/query`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-    tasks.push(...res.results);
-    cursor = res.has_more ? res.next_cursor : undefined;
+    const res = await doQuery(cursor);
+    if (!res.ok) return { ok: false, status: res.status, text: await res.text() };
+    const j = await res.json();
+    results.push(...(j.results || []));
+    cursor = j.has_more ? j.next_cursor : undefined;
   } while (cursor);
+  return { ok: true, results };
+}
 
-  // 並び替え: 優先順位（緊急>高>中>低）→ 作成日 古い順
-  tasks.sort((a, b) => {
-    const pa = PRIORITY_ORDER[a.properties?.[priorityProp]?.select?.name] ?? 99;
-    const pb = PRIORITY_ORDER[b.properties?.[priorityProp]?.select?.name] ?? 99;
-    if (pa !== pb) return pa - pb;
-    return new Date(a.created_time) - new Date(b.created_time);
+const title = (p) =>
+  (p.properties?.[TITLE_PROP]?.title || []).map((t) => t.plain_text).join('') || '(無題)';
+const priority = (p) => p.properties?.[PRIORITY_PROP]?.select?.name ?? null;
+
+async function main() {
+  // 旧 databases/query を試し、ダメなら data_sources/query にフォールバック
+  let out = await paginate(queryDatabase);
+  if (!out.ok) {
+    console.error(
+      `… databases/query NG (HTTP ${out.status}) → data_sources/query (2025-09-03) で再試行`,
+    );
+    out = await paginate(queryDataSource);
+    if (!out.ok) {
+      console.error(`✗ data_sources/query も失敗 (HTTP ${out.status}): ${out.text}`);
+      process.exit(1);
+    }
+  }
+
+  const rows = out.results.sort((a, b) => {
+    const ra = PRIORITY_RANK[priority(a)] ?? 9;
+    const rb = PRIORITY_RANK[priority(b)] ?? 9;
+    if (ra !== rb) return ra - rb;
+    return (a.created_time || '').localeCompare(b.created_time || ''); // 同率は作成日古い順
   });
 
-  const title = (t) => t.properties?.[titleProp]?.title?.[0]?.plain_text ?? '(無題)';
-  const prio = (t) => t.properties?.[priorityProp]?.select?.name ?? '-';
-
-  if (!projectProp) {
-    console.log(
-      '⚠️ バックログDBに案件(relation)プロパティが見つかりません。複数プロジェクト共用の絞り込みができないため、',
-    );
-    console.log(
-      '   このプロジェクトのタスクのみを安全に抽出できません。Notion側で案件 relation を追加し、',
-    );
-    console.log('   各タスクを当プロジェクトの案件ページに紐付けてください。');
-    console.log('NEXT_TARGET_URL=');
+  console.log(`▶ 対象プロジェクト: ${PROJECT_NAME}（案件で絞り込み中）`);
+  console.log(`■ 要件定義済み（Readyキュー）: ${rows.length}件 — 優先度順`);
+  if (rows.length === 0) {
+    console.log('  （対象なし）');
+    console.log('\n=== 次のターゲット ===\n（なし）');
     return;
   }
+  rows.forEach((p, i) => {
+    console.log(`  ${i + 1}. [${priority(p) ?? '-'}] ${title(p)}`);
+    console.log(`     ${p.url}`);
+  });
 
-  console.log(`=== 要件定義済み（案件で絞り込み）: ${tasks.length} 件 ===`);
-  for (const t of tasks) {
-    console.log(`- [${prio(t)}] ${title(t)}  ${t.url}`);
-  }
-  console.log('');
-  console.log(`NEXT_TARGET_URL=${tasks[0]?.url ?? ''}`);
+  const t = rows[0];
+  console.log('\n=== 次のターゲット ===');
+  console.log(`[${priority(t) ?? '-'}] ${title(t)}`);
+  console.log(`URL: ${t.url}`);
+  console.log(`NEXT_TARGET_URL=${t.url}`);
 }
 
 main().catch((e) => {
-  console.error('next-target エラー:', e.message);
+  console.error('✗ 実行エラー:', e);
   process.exit(1);
 });
