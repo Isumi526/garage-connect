@@ -46,7 +46,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: { q
         action={
           <div className="flex gap-2">
             <Button asChild variant="secondary">
-              <Link href="/dashboard/vehicles/scan">車検証QRから登録</Link>
+              <Link href="/dashboard/vehicles/scan">車検証から登録</Link>
             </Button>
             <Button asChild>
               <Link href="/dashboard/vehicles/new">新規登録</Link>

@@ -14,8 +14,8 @@ export default async function VehicleScanPage() {
   return (
     <>
       <PageHeader
-        title="車検証QRから登録"
-        description="車検証の連結QRをスキャンして顧客と車両を登録します"
+        title="車検証から登録"
+        description="車検証の画像/PDFをアップロードしてOCRで読み取り、顧客と車両を登録します"
       />
       <ScanFlow customers={customers ?? []} />
     </>
