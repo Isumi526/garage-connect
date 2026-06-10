@@ -28,6 +28,9 @@ const NAV_ITEMS = [
 export function DashboardNav({ pendingBookings = 0 }: { pendingBookings?: number }) {
   const pathname = usePathname();
 
+  // prefetch は明示せず Next.js の既定（auto）に任せる。各ルートに loading.tsx を
+  // 用意したことで、動的ルートでも「loading 境界までのシェル」が事前取得され（DBクエリは
+  // 走らせない軽量プリフェッチ）、クリック直後にスケルトンが即出る＝遷移が即始まる。
   return (
     <nav className="space-y-1">
       {NAV_ITEMS.map((item) => {
