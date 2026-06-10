@@ -1,4 +1,5 @@
 import { logout } from '@/app/(auth)/actions';
+import { MobileNav } from '@/components/dashboard/mobile-nav';
 import { DashboardNav } from '@/components/dashboard/nav';
 import { Button } from '@/components/ui/button';
 import { requireAuth } from '@/lib/auth/context';
@@ -35,7 +36,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
       </aside>
       <main className="flex-1 overflow-x-hidden bg-muted/20">
-        <div className="mx-auto max-w-6xl p-6">{children}</div>
+        <MobileNav
+          tenantName={tenant.name}
+          userLabel={`${shopUser.display_name ?? ''}（${shopUser.role}）`}
+          pendingBookings={pendingBookings ?? 0}
+        />
+        <div className="mx-auto max-w-6xl p-4 sm:p-6">{children}</div>
       </main>
     </div>
   );
