@@ -15,6 +15,9 @@ const serverSchema = z.object({
     .optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // 車検証OCR(Gemini Vision)。未設定なら OCR は無効（手入力にフォールバック）。
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODEL: z.string().optional(),
 });
 
 const clientSchema = z.object({
@@ -30,6 +33,8 @@ export const serverEnv = serverSchema.parse({
   ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GEMINI_MODEL: process.env.GEMINI_MODEL,
 });
 
 export const clientEnv = clientSchema.parse({
