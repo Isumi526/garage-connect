@@ -65,13 +65,17 @@ if (!URL) {
 const args = parseArgs(process.argv.slice(2));
 const rawTask = typeof args.task === 'string' ? args.task : '(無題)';
 const task = rawTask.startsWith(PREFIX) ? rawTask : `${PREFIX} ${rawTask}`;
+// --url 未指定なら Claude Code Remote Control の固定入口を既定にする（個別セッションURLは毎回変わり取得できないため）。
+const url = typeof args.url === 'string' ? args.url : 'https://claude.ai/code';
 // 認証は secret を JSON ボディに入れる（sido の GAS Webhook と同じ契約）。HMAC ヘッダではない。
+// project は GAS 側のプロジェクト名ラベル出し分け用（無いと "sido" 表示になる）。
 const payload = {
+  project: 'garage-connect',
   secret: SECRET || '',
   kind: typeof args.kind === 'string' ? args.kind : '通知',
   task,
   detail: typeof args.detail === 'string' ? args.detail : '',
-  url: typeof args.url === 'string' ? args.url : '',
+  url,
 };
 
 try {
