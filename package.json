@@ -24,7 +24,7 @@
     "verify:phase3": "NODE_OPTIONS='--conditions=react-server' pnpm --filter web exec tsx ../../scripts/verify-phase3.ts",
     "verify:phase4": "node scripts/verify-phase4.mjs",
     "verify:phase5": "NODE_OPTIONS='--conditions=react-server' pnpm --filter web exec tsx ../../scripts/verify-phase5.ts",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
