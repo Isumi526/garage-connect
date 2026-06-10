@@ -9,15 +9,35 @@
  *   HUMANBALL_WEBHOOK_SECRET … 署名用シークレット（HMAC-SHA256）
  *
  * 使い方:
- *   node --env-file=.env scripts/notify-humanball.mjs \
+ *   node scripts/notify-humanball.mjs \
  *     --kind 要対応 --task "<タスク名>" --detail "<詳細>" [--url "<セッションURL>"]
+ *   （.env は自前で読み込むので --env-file は不要）
  *
  * best-effort: 失敗しても呼び出し元を止めない（exit 0）。
  */
 import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const PROJECT = 'garage-connect';
 const PREFIX = '[Garage]';
+
+// .env を自前ロード（コマンドは `node scripts/notify-humanball.mjs` で呼ばれ --env-file が無いため）
+function loadEnv(p) {
+  const out = {};
+  try {
+    for (const line of readFileSync(p, 'utf8').split('\n')) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+      if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  } catch {
+    /* ignore */
+  }
+  return out;
+}
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const env = loadEnv(resolve(ROOT, '.env'));
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
@@ -25,8 +45,8 @@ function arg(name) {
 }
 
 async function main() {
-  const url = process.env.HUMANBALL_WEBHOOK_URL;
-  const secret = process.env.HUMANBALL_WEBHOOK_SECRET;
+  const url = process.env.HUMANBALL_WEBHOOK_URL || env.HUMANBALL_WEBHOOK_URL;
+  const secret = process.env.HUMANBALL_WEBHOOK_SECRET || env.HUMANBALL_WEBHOOK_SECRET;
   if (!url) {
     console.warn('HUMANBALL_WEBHOOK_URL 未設定のため通知スキップ（best-effort）');
     return;
