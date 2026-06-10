@@ -8,6 +8,8 @@ CC は PR作成・承認後の migration適用 / Merge / functions deploy / ス�
 バックログDB: https://www.notion.so/6e7dd24739dd431688564b12f64d8ebd?v=3760ff81c56b8185a056000cd43639bb&source=copy_link
 
 > 通知: `notify-humanball.mjs` は task 名に自動で **[Garage]** を付与する（複数プロジェクト共用 LINE チャンネルでの判別用）。
+>
+> **承認待ちの提示（画面）と `--detail`（LINE）は CLAUDE.md「人ボール報告フォーマット（必須）」に従う**：結論先頭・選択肢 A/B・推奨1行。LINE は `何の承認か＋A.承認(合図) B.保留／推奨X` を **1〜2行**に圧縮する。
 
 # 前提
 
@@ -38,7 +40,7 @@ CC は PR作成・承認後の migration適用 / Merge / functions deploy / ス�
      - **追加のみ** → 手順5で人の承認後にCCが psql で適用できる（後述）。
      - **破壊的を含む** → CCは適用しない。本番DBのバックアップ取得済みかを確認（★）し、未取得なら促して停止。人手のSQLエディタ実行＋事前バックアップを依頼する。
        - **停止する直前に LINE 通知（best-effort・失敗無視）**：
-         `node scripts/notify-humanball.mjs --kind ship承認 --task "<PRタイトル>" --detail "破壊的migrationあり。事前バックアップのうえSQLエディタで手動実行して" [--url "<セッションurl>"]`
+         `node scripts/notify-humanball.mjs --kind ship承認 --task "<PRタイトル>" --detail "破壊的migrationN件あり/A.バックアップ後SQLエディタで手動実行 B.中止／推奨A（CCは適用しない）" [--url "<セッションurl>"]`
    - **該当なし**：後続のPR本文に「migration: なし」と明記する。
    - これにより「migration適用漏れ」を Merge 前に人が必ず認識できる状態にする。
 
@@ -62,7 +64,7 @@ CC は PR作成・承認後の migration適用 / Merge / functions deploy / ス�
    - **重要：Merge＝Vercel本番デプロイ自動実行なので、migration は Merge より前に適用する**（新フロントが未適用スキーマを叩く事故を防ぐ）。
    - **追加のみDDLの場合のみ**、CCが適用してよい（破壊的を含むなら手順2で人手＋バックアップ依頼済み・ここはスキップ）：
      1. 適用承認の停止直前に LINE 通知（best-effort・失敗無視）:
-        `node scripts/notify-humanball.mjs --kind ship承認 --task "<PRタイトル>" --detail "本番migration適用待ち。追加のみN件、承認(「実行して」)で psql 適用する" [--url "<セッションurl>"]`
+        `node scripts/notify-humanball.mjs --kind ship承認 --task "<PRタイトル>" --detail "本番migration適用待ち(追加のみN件)/A.「実行して」で psql 適用 B.保留／推奨A" [--url "<セッションurl>"]`
      2. 人が「実行して」等で明示承認したら、CCが `origin/main..dev` 差分の未適用 `supabase/migrations/` ファイルを **内容そのまま** 1つずつ psql で適用：
         `psql "$SUPABASE_PROD_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/<file>.sql`
         - 接続URLは `.env` の `SUPABASE_PROD_DB_URL` を使う。**値はログ/チャットに出さない**（コマンドに直接書かず環境変数参照）。db push は使わない（個別SQL適用のみ）。
@@ -72,14 +74,14 @@ CC は PR作成・承認後の migration適用 / Merge / functions deploy / ス�
 6. ★本番承認ゲート（Mergeタイミング承認制・CC実行可）:
    - **Merge＝Vercel本番デプロイ自動実行**。本番影響が出るので、**人が「今Mergeして」等、本番を確認できるタイミングを明示した時だけ** CCが実行する。
    - タイミング待ちで停止する直前に LINE 通知（best-effort・失敗無視）:
-     `node scripts/notify-humanball.mjs --kind ship承認 --task "<PRタイトル>" --detail "<PR URL> Mergeタイミング待ち。本番を見れる時に「今Mergeして」で実行する" [--url "<セッションurl>"]`
+     `node scripts/notify-humanball.mjs --kind ship承認 --task "<PRタイトル>" --detail "Mergeタイミング待ち/A.本番を見れる時に「今Mergeして」 B.まだ／推奨A（<PR URL>）" [--url "<セッションurl>"]`
    - 人がタイミングを明示しない限り **CCはMergeせず待機**（勝手にMergeしない）。
    - 人が「今Mergeして」等と返したら、CCが実行：`gh pr merge <PR番号> --merge`（main保護はgh認証＝人承認が前提）。
 
 7. Merge完了後、main最新を取り込み（`git fetch origin main`）、残りの本番操作（各★承認）:
    - **各★承認で停止する直前に LINE 通知（best-effort・失敗無視）**。同じ停止で複数承認をまとめて聞く場合は通知も1回にまとめる（連投しない）。
    - webhook/cron 等は Next.js の API route handlers（apps/web）で、**Merge＝Vercel本番デプロイで一緒に反映される**（Supabase edge functions の個別 deploy は使っていない）。別途 deploy/設定変更が要る場合のみ ★承認 → 反映。停止直前に：
-     `node scripts/notify-humanball.mjs --kind ship承認 --task "[Garage] <PRタイトル>" --detail "<deploy/設定内容>承認待ち" [--url "<セッションurl>"]`
+     `node scripts/notify-humanball.mjs --kind ship承認 --task "<PRタイトル>" --detail "<deploy/設定内容>承認待ち/A.「実行して」で反映 B.保留／推奨A" [--url "<セッションurl>"]`
 
 8. スモーク（自動・本番URL）: テストアカウントで、今回の反映に関係する主要動線（ログイン→ダッシュボード／車検通知の配信・配信ログ／LIFF予約／Stripe決済 など）を確認し報告。
    - **必ずハードリロード**（キャッシュ無効・Cmd/Ctrl+Shift+R 相当）で確認する。Vercelデプロイ直後は旧バンドルがキャッシュされ、ハードリロードしないと反映前の画面を見て誤判定する。
@@ -98,6 +100,6 @@ CC は PR作成・承認後の migration適用 / Merge / functions deploy / ス�
 - migration適用は Merge（＝Vercel本番デプロイ）より前に行う。
 - preview は使わない（dev preview 無効）。品質担保はローカルE2E全green＋本番スモーク（**ハードリロード必須**）。
 - supabase db push は絶対にしない。`SUPABASE_PROD_DB_URL` の値はログ/チャットに残さない。
-- **停止＝LINE通知（例外なし）**：人の入力・操作・承認待ちで止まる時は直前に必ず notify-humanball.mjs（best-effort）。「対話中だから」を理由にスキップしない（見られているか判断できないため常に通知）。1停止で複数承認をまとめる時のみ通知1回。
+- **停止＝LINE通知（例外なし）**：人の入力・操作・承認待ちで止まる時は直前に必ず notify-humanball.mjs（best-effort）。「対話中だから」を理由にスキップしない（見られているか判断できないため常に通知）。1停止で複数承認をまとめる時のみ通知1回。提示・`--detail` は **CLAUDE.md「人ボール報告フォーマット（必須）」**（結論先頭・A/B・推奨1行、LINE は1〜2行）に従う。
 - スモークで異常があれば即停止して報告。
 - .env はコミットしない。
