@@ -5,7 +5,7 @@ import { SubmitButton } from '@/components/auth/submit-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { QrScanner } from '@/components/vehicles/qr-scanner';
+import { ImageScanner } from '@/components/vehicles/image-scanner';
 import type { ParsedInspectionCertificate } from '@/lib/qr/inspection-certificate-parser';
 import { useState } from 'react';
 import { useFormState } from 'react-dom';
@@ -29,10 +29,10 @@ export function ScanFlow({ customers }: { customers: CustomerOption[] }) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>1. 車検証QRをスキャン</CardTitle>
+          <CardTitle>1. 車検証の画像/PDFをアップロード</CardTitle>
         </CardHeader>
         <CardContent>
-          <QrScanner onParsed={setParsed} />
+          <ImageScanner onParsed={setParsed} />
         </CardContent>
       </Card>
 
