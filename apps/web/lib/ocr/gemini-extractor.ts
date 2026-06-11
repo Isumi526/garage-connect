@@ -133,7 +133,9 @@ export class OcrError extends Error {
 
 export type OcrInput = { dataBase64: string; mimeType: OcrMimeType };
 
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+// 既定モデル。Google 側の提供終了でバージョンが廃止されることがあるため、
+// 廃止時は値を更新するか GEMINI_MODEL env で上書きする（404 が出たら最新の Flash 系へ）。
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 /**
  * 車検証の画像/PDF を Gemini Vision で OCR し、構造化結果を返す。
