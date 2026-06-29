@@ -40,10 +40,10 @@ const ASSERT = has('--assert')
 const JSON_ONLY = has('--json')
 const PROD = has('--prod-readonly')
 const DB_URL_OVERRIDE = getOpt('--db-url')
-// Garage Connect はローカル Supabase を別ポートで隔離起動するため（DB 55322 / API 55321 / Studio 55323）
-// 既定DBポートを 55322 にし、.env の LOCAL_DB_URL で上書き可能にする
+// ローカル Supabase の既定DB接続。標準ポートは 54322。
+// 別ポートで隔離起動するプロジェクト（例: garage は DB 55322）は .env の LOCAL_DB_URL で上書きする
 // （config.toml のポート変更はローカル作業ツリーのみでコミットしない方針＝接続値は gitignore の .env 側に置く）。
-const LOCAL_DEFAULT = 'postgresql://postgres:postgres@127.0.0.1:55322/postgres'
+const LOCAL_DEFAULT = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
 
 // ---- .env 読み（値はログに出さない）----
 function loadEnv() {
