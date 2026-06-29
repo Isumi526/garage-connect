@@ -1,0 +1,19 @@
+# 独立レビュー（scripts/independent-review.mjs）と RLS 監査（scripts/rls-audit.mjs）の
+# accepted-findings レジストリ。ここに載せた finding は report に「accepted(tracked: ticket)」として
+# 出るが、verdict=block の集計からは除外される（＝人間が把握済み・チケットで追跡中の既知事項）。
+# verdict=block になるのは「未acceptの critical/🔴 が1件以上」の時だけ。
+#
+# entry: { rule, target, reason, ticket }
+#   rule   … ルール名（.md は省略可。finding.rule と部分一致で判定）
+#   target … 対象（テーブル名/ファイル名等。finding.file か finding.message に含まれれば一致）
+#   reason … なぜ未対応で許容しているか
+#   ticket … 追跡している Notion ページID（集約先）
+#
+# ── Garage Connect 用は空から開始（sido のベースラインは引き継がない）。
+#    Garage Connect は Supabase Auth ＋ shop_users 由来 auth_tenant_id() による tenant_id RLS を
+#    初期 migration（20260601000002_rls_policies.sql）から全テーブルで有効化している認証アプリで、
+#    sido の「anon公開キー前提・RLS未適用ベースライン」は存在しないため。
+#    （初回ローカル起動後に `node scripts/rls-audit.mjs` で 0 leak を確認すること。
+#      LIFF 顧客導線は server route 経由のためテーブルへ anon を直接露出しない前提。）
+#    既知許容が出たらここに追記する。
+entries: []

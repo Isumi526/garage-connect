@@ -5,6 +5,8 @@ garage-connect の本番反映を、各本番操作の承認を取りながら�
 CC は PR作成・承認後の migration適用 / Merge / functions deploy / スモークを行う（各操作ごとに人の承認）。
 品質担保は **ローカルE2E全green＋Merge後の本番スモーク（ハードリロード必須）**（dev は Vercel preview 無効のため preview URL は使わない／案内しない）。
 
+> **対象は「本番待ち」のみ**。CC（/run・/next）の完成品は **レビュー待ち** に着地し、**人がレビュー承認して「本番待ち」へ昇格**したものだけが本番反映の対象になる。**レビュー待ち（未レビュー）は /ship が構造上拾わない**（＝未レビューが本番に出ない安全装置）。
+
 バックログDB: https://www.notion.so/6e7dd24739dd431688564b12f64d8ebd?v=3760ff81c56b8185a056000cd43639bb&source=copy_link
 
 > 通知: `notify-humanball.mjs` は task 名に自動で **[Garage]** を付与する（複数プロジェクト共用 LINE チャンネルでの判別用）。
