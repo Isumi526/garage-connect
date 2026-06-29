@@ -71,7 +71,7 @@ MVP 構築後の継続開発は、Notion バックログ駆動で自走する。
 - **スタック**: Next.js 14（App Router・SSR/RSC）/ Supabase / LINE Messaging API / Stripe / pnpm workspace（アプリは **`apps/web` 1本**）。webhook・cron は **Next.js の API route handlers**（Supabase edge functions は不使用）。
 - **本番 Supabase ref**: `ezgktyhxnoimczbhokkv`（東京）
 - **Vercel プロジェクト**: `garage-connect`（単一アプリ・Root Directory=`apps/web`・リージョン hnd1）
-- **GitHub**: `Isumi526/garage-connect`（public）。`main`=本番（Vercel自動デプロイ）/ `dev`=統合用。
+- **GitHub**: `Isumi526/garage-connect`（public）。`main`=本番（**手動 `vercel --prod --scope stism` でデプロイ・git自動デプロイは未配線**）/ `dev`=統合用。
 - **バックログ**: 複数プロジェクト共用の Notion DB（`バックログ管理`）。自案件は `.env` の `BACKLOG_PROJECT_ID`（案件page_id）で絞る。盤面取得は `node --env-file=.env scripts/next-target.mjs`（notion-search は使わない）。
 - **ローカル開発**: 別ポートのローカル Supabase（API 55321 / Studio 55323 / DB 55322）で隔離起動（`supabase/config.toml` のポート変更はローカル作業ツリーのみ・コミットしない）。
 
@@ -84,7 +84,7 @@ MVP 構築後の継続開発は、Notion バックログ駆動で自走する。
 - **PLAYWRIGHT_PROJECTS**: **none**（`playwright.config.*` 無し。Playwright 段はスキップ）。
 - **LOCAL_STACK**: ローカル Supabase（別ポート＝ API `55321` / DB `55322` / Studio `55323`）。`supabase start` で起動。DB 接続は `.env` の `LOCAL_DB_URL`（`rls-audit.mjs` 既定 55322）。**none ではない**＝E2E/DB 検証・RLS 監査は local を保証してから実行。
 - **MIGRATIONS_DIR**: `supabase/migrations/`（追加のみ DDL。`supabase db push` 禁止＝個別 SQL 適用のみ）。
-- **DEPLOY_PLATFORM**: Vercel（プロジェクト `garage-connect`・Root=`apps/web`・hnd1）。`main` のみ自動デプロイ。**dev は preview 無効＝デプロイ対象外**（dev 未push＝本番影響ゼロ）。Cron は `apps/web/vercel.json`（`/api/cron/daily-notifications` 毎日）。
+- **DEPLOY_PLATFORM**: Vercel（プロジェクト `garage-connect`・scope `stism`・Root=`apps/web`・hnd1・本番ドメイン `https://garage-connect-bice.vercel.app`）。**本番デプロイは手動 CLI `vercel --prod --scope stism` のみ＝git連携の自動デプロイは未配線**（`main` に push/Merge しても自動デプロイされない）。dev/main とも preview/自動反映なし＝品質担保はローカル検証＋デプロイ後の本番スモーク。Cron は `apps/web/vercel.json`（`/api/cron/daily-notifications` 毎日・Bearer `CRON_SECRET`）。
 - **DEV_URL**: `http://localhost:3000`（`pnpm dev`）。
 - **PROD_BRANCH**: `main`／**AUTO_MERGE_TARGET**: `dev`／**AUTO_TIER**: `低`（レビュー不要で本番待ちへ自動マージできる最大リスク階層）／**MAX_WALL**: `180`分（回路遮断）。
 - **RLS構成メモ**: Shared DB / Shared Schema + RLS。クライアント露出テーブルは `tenant_id = auth_tenant_id()`（`auth_tenant_id()` は `shop_users` から `auth.uid()` のテナントを引く）でスコープ。RLS は初期 migration `20260601000002_rls_policies.sql` から全テーブルで有効。`rls-audit.mjs` で「anon到達可×RLS無効」を機械監査（既知許容は `.kody/accepted.yml`＝現状空）。
@@ -144,11 +144,12 @@ MVP 構築後の継続開発は、Notion バックログ駆動で自走する。
 ### 本番 migration 適用
 - **人の明示承認 ＋「追加のみ DDL」に限り CC が psql で実行可**（`.env` の `SUPABASE_PROD_DB_URL`、値はログ/チャットに残さない）。
 - **破壊的（DROP/DELETE/TRUNCATE/UPDATE/型変更/NOT NULL 追加 等）を1つでも含むなら CC は実行せず、人手の SQL エディタ実行＋事前バックアップ**を促して停止。
-- 適用は **Merge（＝Vercel本番デプロイ）より前**に行う。`supabase db push` は禁止（個別 SQL 適用のみ）。
+- 適用は **本番デプロイ（手動 `vercel --prod`）より前**に行う（Merge では自動デプロイされないため、適用は「デプロイ前」が正しい順序）。`supabase db push` は禁止（個別 SQL 適用のみ）。
 
-### Merge（本番反映ゲート）
-- 本番反映は **dev → PR → main**。**CC は main へ直接 push しない**。
+### Merge ＋ 本番デプロイ（本番反映ゲート）
+- 本番反映は **dev → PR → main → 手動デプロイ**。**CC は main へ直接 push しない**。
 - **Merge は、人がタイミングを明示承認（「今 Merge して」等）した時のみ** CC が `gh pr merge` で実行する。それ以外は待機。
+- **Merge では自動デプロイされない**（git連携未配線）。**本番反映の実体は手動 `vercel --prod --scope stism`**＝人の明示承認（「deploy して」等）後にのみ CC が実行する。追加のみ migration は**デプロイより前**に適用。詳細は `/ship`（`.claude/commands/ship.md`）。
 
 ### 停止 ＝ LINE 通知（例外なし）
 - 人の入力・操作・承認待ちで止まる時は、**直前に必ず** `node scripts/notify-humanball.mjs`（best-effort・失敗無視）。
