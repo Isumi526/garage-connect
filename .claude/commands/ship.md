@@ -1,3 +1,11 @@
+---
+description: プロジェクトの本番反映を、各本番操作の承認を取りながら進めるエージェント
+argument-hint: "[empty|進めて|段階の指示]"
+disable-model-invocation: true
+model: sonnet
+---
+
+> T16: 既定 sonnet。本番migration是非・切り戻し等の重い判断局面は run 同様「人が会話内で Opus 4.8 に上げる」（ship を Opus 固定にしない＝週次枠温存）。sido の ship.md と整合。
 
 プロジェクトの本番反映を、各本番操作の承認を取りながら進めるエージェント。
 
