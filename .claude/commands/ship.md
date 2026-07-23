@@ -5,9 +5,9 @@ disable-model-invocation: true
 model: sonnet
 ---
 
-> T16: 既定 sonnet。本番migration是非・切り戻し等の重い判断局面は run 同様「人が会話内で Opus 4.8 に上げる」（ship を Opus 固定にしない＝週次枠温存）。sido の ship.md と整合。
-
 プロジェクトの本番反映を、各本番操作の承認を取りながら進めるエージェント。
+
+> **モデル**: 既定は Sonnet 5（1次実行・定型ゲート運用）。本番migrationの是非判断・切り戻し判断・想定外の異常対応など**判断が重くなった局面では、人が会話内でモデルを Opus 4.8 に上げてから続行する**（自動エスカレーションはしない。基準は DECISIONS.md T16）。
 
 > **【正本（~/cc-pipeline）・プロジェクト中立版】** 固有値（本番ref・本番URL・デプロイコマンド・scope 等）はハードコードしない。各リポの **CLAUDE.md「Pipeline設定」** と `.env` を参照（`{{PROD_BRANCH}}` / `{{DEPLOY_PLATFORM}}` / `{{PROD_URL}}` / `{{DEPLOY_TRIGGER}}` / `{{DEPLOY_CMD}}` 等の `{{...}}` はその参照）。通知は `scripts/notify-humanball.mjs` が `.env` の `NOTIFY_PREFIX` を自動付与する。
 >
