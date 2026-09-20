@@ -76,7 +76,8 @@ MVP 構築後の継続開発は、Notion バックログ駆動で自走する。
 - **ローカル開発**: 別ポートのローカル Supabase（API 55321 / Studio 55323 / DB 55322）で隔離起動（`supabase/config.toml` のポート変更はローカル作業ツリーのみ・コミットしない）。
 
 ### Pipeline設定（/run・/review の `{{...}}` プレースホルダ実値）
-`/run`・`/review` は以下を参照する（`{{...}}` ＝この表 ＋ `.env`）。
+`/run`・`/review`・`/ship`・`/intake` は **cc-pipeline プラグイン**（`~/.claude/skills/cc-pipeline` → `~/dev/cc-pipeline/plugin/skills/*/SKILL.md`・全プロジェクト自動ロード）の skill。このリポに `.claude/commands/` のコピーは置かない（2026-09-20・T44 S5 で撤去。`next.md`・`spec-to-impl.md` はこのリポ固有なので残す）。以下を参照する（`{{...}}` ＝この表 ＋ `.env`）。
+- **DOC_LEVEL**: `light`（設計書＝spec-doc skill の粒度・2026-09-20 T44）。**SPEC_DS_ID**: `1cf812c9-6a86-452f-bacc-8f823786feb5`（Notion「設計書」DB・3リポ共有。お客様共有版は案件ページ配下「お客様共有（Garage Connect）」を作って人が一度だけ「共有›公開」）。**STAKEHOLDERS_DS_ID**: `f2afffbc-b6fd-400c-9625-9c6e65a38a00`（関係者DB）。案件プロファイル＝案件管理マスタの Garage Connect 行本文（`3690ff81-c56b-8099-94dc-d196307d2b79`）。
 - **APP_LAYOUT**: pnpm workspace モノレポ（`pnpm-workspace.yaml: packages: apps/*`）。実体アプリは **`apps/web` 1本**。root scripts が `pnpm --filter web ...` に委譲。
 - **TYPECHECK**: `pnpm typecheck`（= `pnpm --filter web typecheck` = `tsc --noEmit`）。
 - **BUILD**: `pnpm build`（= `pnpm --filter web build` = `next build`）。
